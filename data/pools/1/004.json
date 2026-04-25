@@ -1,0 +1,27 @@
+{
+  "id": "mocy4ju61l579nfk3",
+  "number": 4,
+  "content": "设 $f(x) = x^3 - 3x + 1$，求 $f'(1)$ 的值。",
+  "options": [
+    {
+      "label": "A",
+      "content": "$-2$"
+    },
+    {
+      "label": "B",
+      "content": "$0$"
+    },
+    {
+      "label": "C",
+      "content": "$2$"
+    },
+    {
+      "label": "D",
+      "content": "$3$"
+    }
+  ],
+  "answer": "B",
+  "poolId": "1",
+  "createdAt": "2026-04-24T13:28:19.566Z",
+  "updatedAt": "2026-04-24T13:28:19.566Z"
+}

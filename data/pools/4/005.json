@@ -1,0 +1,27 @@
+{
+  "id": "mocy4ju6gfznauq5c",
+  "number": 5,
+  "content": "已知等差数列 $\\{a_n\\}$ 的首项 $a_1 = 2$，公差 $d = 3$，求 $a_5$。",
+  "options": [
+    {
+      "label": "A",
+      "content": "$11$"
+    },
+    {
+      "label": "B",
+      "content": "$14$"
+    },
+    {
+      "label": "C",
+      "content": "$17$"
+    },
+    {
+      "label": "D",
+      "content": "$20$"
+    }
+  ],
+  "answer": "B",
+  "poolId": "4",
+  "createdAt": "2026-04-24T13:28:19.566Z",
+  "updatedAt": "2026-04-24T13:28:19.566Z"
+}

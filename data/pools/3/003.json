@@ -1,0 +1,27 @@
+{
+  "id": "mocy4ju6gasqdk3jv",
+  "number": 3,
+  "content": "下列哪个是质数？",
+  "options": [
+    {
+      "label": "A",
+      "content": "9"
+    },
+    {
+      "label": "B",
+      "content": "15"
+    },
+    {
+      "label": "C",
+      "content": "17"
+    },
+    {
+      "label": "D",
+      "content": "21"
+    }
+  ],
+  "answer": "C",
+  "poolId": "3",
+  "createdAt": "2026-04-24T13:28:19.566Z",
+  "updatedAt": "2026-04-24T13:28:19.566Z"
+}

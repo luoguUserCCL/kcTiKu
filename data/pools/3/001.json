@@ -1,0 +1,27 @@
+{
+  "id": "mocy4ju6y0r61soja",
+  "number": 1,
+  "content": "求 $x^2 + 2x + 1 = 0$ 的解。\n\n提示：可以使用完全平方式。",
+  "options": [
+    {
+      "label": "A",
+      "content": "$x = 1$"
+    },
+    {
+      "label": "B",
+      "content": "$x = -1$"
+    },
+    {
+      "label": "C",
+      "content": "$x = \\pm 1$"
+    },
+    {
+      "label": "D",
+      "content": "无解"
+    }
+  ],
+  "answer": "B",
+  "poolId": "3",
+  "createdAt": "2026-04-24T13:28:19.566Z",
+  "updatedAt": "2026-04-24T13:28:19.566Z"
+}
