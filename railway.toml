@@ -7,3 +7,7 @@ healthcheckPath = "/"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
+
+[[deploy.volumes]]
+name = "kc-data"
+mountPath = "/app/data"
