@@ -21,34 +21,25 @@ RUN npm run build
 FROM base AS runner
 WORKDIR /app
 
-# Install su-exec for user switching
-RUN apk add --no-cache su-exec
-
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV HOSTNAME="0.0.0.0"
 ENV PORT=3000
 
-# Create users first
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-
-# Create data directory with correct ownership
-RUN mkdir -p /app/data/pools && chown -R nextjs:nodejs /app/data
+# Create data directory
+RUN mkdir -p /app/data/pools
 
 COPY --from=builder /app/public ./public
 
 RUN mkdir .next
-RUN chown nextjs:nodejs .next
 
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
 
-# Copy entrypoint script
-COPY docker-entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+# Copy default data files
+COPY --from=builder /app/data ./data
 
 EXPOSE 3000
 
-ENTRYPOINT ["docker-entrypoint.sh"]
+# Run as root to avoid permission issues with volume
 CMD ["node", "server.js"]
