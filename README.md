@@ -63,7 +63,7 @@ railway volume create --mount /app/data
 
 | 密码类型 | 默认值 | 说明 |
 |---------|--------|------|
-| 管理密码 | `admin123` | 进入管理界面需要 |
+| 管理密码 | 保密 | 进入管理界面需要 |
 | 做题密码 | 无（默认公开） | 可在管理界面设置 |
 
 建议部署后修改 `src/app/page.tsx` 中的 `ADMIN_PASSWORD` 常量。
