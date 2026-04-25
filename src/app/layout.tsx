@@ -10,6 +10,9 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "题目管理系统",
   description: "支持导入题目、做题练习、管理题目的在线系统",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({

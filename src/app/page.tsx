@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -108,6 +108,175 @@ function ImageUploadButton({ onInsert }: { onInsert: (markdown: string) => void 
   )
 }
 
+// 图片占位符格式: 【图片：filename.png】
+const IMAGE_PLACEHOLDER_REGEX = /【图片：([^】]+)】/g
+// Base64图片匹配
+const BASE64_IMAGE_REGEX = /!\[([^\]]*)\]\(data:image\/([^;]+);base64,[^)]+\)/g
+
+// 智能文本编辑器 - 图片显示为占位符，但保留base64数据
+function SmartImageTextarea({
+  value,
+  onChange,
+  placeholder,
+  className,
+  minHeight = '120px'
+}: {
+  value: string
+  onChange: (value: string) => void
+  placeholder?: string
+  className?: string
+  minHeight?: string
+}) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  // 存储图片数据的映射：占位符 -> 完整markdown
+  const imageDataRef = useRef<Map<string, string>>(new Map())
+  
+  // 将内容中的base64图片转换为占位符显示
+  const processForDisplay = useCallback((content: string): string => {
+    if (!BASE64_IMAGE_REGEX.test(content)) {
+      return content
+    }
+    
+    BASE64_IMAGE_REGEX.lastIndex = 0
+    
+    const newImageData = new Map(imageDataRef.current)
+    
+    const display = content.replace(
+      BASE64_IMAGE_REGEX,
+      (match, filename, mimeType) => {
+        // 检查是否已经有对应的占位符
+        for (const [placeholder, fullMd] of newImageData.entries()) {
+          if (fullMd === match) {
+            return placeholder
+          }
+        }
+        
+        // 从 MIME 类型获取真实扩展名
+        const extFromMime = mimeType === 'svg+xml' ? 'svg' 
+          : mimeType === 'jpeg' ? 'jpg' 
+          : mimeType
+        
+        // 检查文件名是否已有扩展名
+        const hasExtension = filename && /\.(png|jpe?g|gif|svg|webp|bmp|ico)$/i.test(filename)
+        
+        const displayName = hasExtension 
+          ? filename 
+          : `${filename || 'image'}.${extFromMime}`
+        
+        const placeholder = `【图片：${displayName}】`
+        newImageData.set(placeholder, match)
+        return placeholder
+      }
+    )
+    
+    imageDataRef.current = newImageData
+    return display
+  }, [])
+  
+  // 将占位符还原为base64图片
+  const processForSave = useCallback((displayContent: string): string => {
+    let result = displayContent
+    imageDataRef.current.forEach((fullMarkdown, placeholder) => {
+      result = result.replace(placeholder, fullMarkdown)
+    })
+    return result
+  }, [])
+  
+  // 显示内容
+  const displayValue = useMemo(() => {
+    return processForDisplay(value)
+  }, [value, processForDisplay])
+  
+  // 检测是否有图片
+  const hasImages = IMAGE_PLACEHOLDER_REGEX.test(displayValue)
+  
+  // 提取图片标签用于显示
+  const imageTags = useMemo(() => {
+    const tags: { filename: string }[] = []
+    IMAGE_PLACEHOLDER_REGEX.lastIndex = 0
+    displayValue.replace(IMAGE_PLACEHOLDER_REGEX, (match, filename) => {
+      tags.push({ filename })
+      return match
+    })
+    return tags
+  }, [displayValue])
+  
+  // 处理编辑变化
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newDisplayContent = e.target.value
+    
+    // 检查哪些占位符被删除了
+    IMAGE_PLACEHOLDER_REGEX.lastIndex = 0
+    const oldPlaceholders = displayValue.match(IMAGE_PLACEHOLDER_REGEX) || []
+    IMAGE_PLACEHOLDER_REGEX.lastIndex = 0
+    const newPlaceholders = newDisplayContent.match(IMAGE_PLACEHOLDER_REGEX) || []
+    
+    // 删除不再存在的图片数据
+    oldPlaceholders.forEach(p => {
+      if (!newPlaceholders.includes(p)) {
+        imageDataRef.current.delete(p)
+      }
+    })
+    
+    // 保存时还原图片数据
+    const contentToSave = processForSave(newDisplayContent)
+    onChange(contentToSave)
+  }
+
+  return (
+    <div className="space-y-2">
+      <Textarea
+        ref={textareaRef}
+        placeholder={placeholder}
+        value={displayValue}
+        onChange={handleChange}
+        className={className}
+        style={{ minHeight }}
+      />
+      {hasImages && imageTags.length > 0 && (
+        <div className="flex flex-wrap gap-1 p-2 bg-muted/30 rounded-md">
+          <span className="text-xs text-muted-foreground mr-1">已插入图片:</span>
+          {imageTags.map((tag, idx) => (
+            <span 
+              key={idx} 
+              className="inline-flex items-center gap-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded text-sm font-medium"
+            >
+              <ImageIcon className="w-3 h-3" />
+              {tag.filename}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// 自定义 URL 转换函数，支持 data: 协议（base64 图片）
+function customUrlTransform(url: string): string {
+  // 允许 data: 协议（用于 base64 图片）
+  if (url.startsWith('data:')) {
+    return url
+  }
+  // 其他 URL 使用默认的安全检查
+  const safeProtocol = /^(https?|ircs?|mailto|xmpp)$/i
+  const colon = url.indexOf(':')
+  const questionMark = url.indexOf('?')
+  const numberSign = url.indexOf('#')
+  const slash = url.indexOf('/')
+  
+  if (
+    colon === -1 ||
+    (slash !== -1 && colon > slash) ||
+    (questionMark !== -1 && colon > questionMark) ||
+    (numberSign !== -1 && colon > numberSign) ||
+    safeProtocol.test(url.slice(0, colon))
+  ) {
+    return url
+  }
+  
+  return ''
+}
+
 // Markdown + KaTeX 渲染组件
 function MarkdownRenderer({ content }: { content: string }) {
   return (
@@ -115,16 +284,22 @@ function MarkdownRenderer({ content }: { content: string }) {
       <ReactMarkdown
         remarkPlugins={[remarkMath]}
         rehypePlugins={[rehypeKatex, rehypeRaw]}
+        urlTransform={customUrlTransform}
         components={{
           p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-          img: ({ src, alt }) => (
-            <img 
-              src={src} 
-              alt={alt || ''} 
-              className="max-w-full h-auto rounded-lg"
-              style={{ maxHeight: '300px' }}
-            />
-          ),
+          img: ({ src, alt, ...props }: React.ImgHTMLAttributes<HTMLImageElement>) => {
+            if (!src) return null
+            return (
+              <img 
+                src={src} 
+                alt={alt || ''} 
+                className="max-w-full h-auto rounded-lg my-2"
+                style={{ maxHeight: '300px', objectFit: 'contain' }}
+                loading="lazy"
+                {...props}
+              />
+            )
+          },
           code: ({ className, children, ...props }: any) => {
             const match = /language-(\w+)/.exec(className || '')
             return match ? (
@@ -367,11 +542,12 @@ function ImportQuestions() {
               <Label>题面内容</Label>
               <ImageUploadButton onInsert={insertToContent} />
             </div>
-            <Textarea
+            <SmartImageTextarea
               placeholder="输入题面内容，支持 Markdown 和 KaTeX 语法&#10;例如：求 $x^2 + 2x + 1 = 0$ 的解"
               value={content}
-              onChange={(e) => setContent(e.target.value)}
-              className="min-h-[120px] font-mono"
+              onChange={setContent}
+              className="font-mono"
+              minHeight="120px"
             />
           </div>
 
@@ -404,11 +580,12 @@ function ImportQuestions() {
                       {option.label}.
                     </Label>
                   </div>
-                  <Textarea
+                  <SmartImageTextarea
                     placeholder={`选项 ${option.label} 内容`}
                     value={option.content}
-                    onChange={(e) => updateOption(option.label, e.target.value)}
-                    className="flex-1 min-h-[60px] font-mono"
+                    onChange={(v) => updateOption(option.label, v)}
+                    className="flex-1 font-mono"
+                    minHeight="60px"
                   />
                 </div>
                 <div className="ml-20">
@@ -1356,10 +1533,11 @@ function EditQuestionDialog({
               <Label>题面内容</Label>
               <ImageUploadButton onInsert={insertToContent} />
             </div>
-            <Textarea
+            <SmartImageTextarea
               value={content}
-              onChange={(e) => setContent(e.target.value)}
-              className="min-h-[100px] font-mono"
+              onChange={setContent}
+              className="font-mono"
+              minHeight="100px"
             />
           </div>
           <div className="space-y-3">
@@ -1378,10 +1556,11 @@ function EditQuestionDialog({
                         {option.label}.
                       </Label>
                     </div>
-                    <Textarea
+                    <SmartImageTextarea
                       value={option.content}
-                      onChange={(e) => updateOption(option.label, e.target.value)}
-                      className="flex-1 min-h-[60px] font-mono"
+                      onChange={(v) => updateOption(option.label, v)}
+                      className="flex-1 font-mono"
+                      minHeight="60px"
                     />
                   </div>
                   <div className="ml-20">
