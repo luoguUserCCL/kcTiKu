@@ -1591,7 +1591,7 @@ export default function Home() {
       <div className="container mx-auto px-4 py-8 max-w-5xl">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold mb-2 flex items-center justify-center gap-3">
-            <BookOpen className="w-8 h-8" />
+            <img src="/icon.svg" alt="KC" className="w-8 h-8" />
             题目管理系统
           </h1>
           <p className="text-muted-foreground">
